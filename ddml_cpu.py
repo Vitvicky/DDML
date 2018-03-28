@@ -224,24 +224,24 @@ class Net(nn.Module):
 
 
 if __name__ == "__main__":
-    max_iter_count = 1
-    batch_size = 10
-    layer_shape = (784, 392, 28, 10)
+    # max_iter_count = 1
+    # batch_size = 10
+    # layer_shape = (784, 392, 28, 10)
 
-    setup_logger()
+    # setup_logger()
 
-    data = DDMLDataset()
-    data_loader = DataLoader(dataset=data)
-    net = Net(layer_shape)
+    # data = DDMLDataset()
+    # data_loader = DataLoader(dataset=data)
+    # net = Net(layer_shape)
 
-    for _ in range(max_iter_count):
-        output = []
-        for i, (image, label) in enumerate(data_loader):
-            image = Variable(image)
+    # for _ in range(max_iter_count):
+    #     output = []
+    #     for i, (image, label) in enumerate(data_loader):
+    #         image = Variable(image)
 
-            output.append((net(image), label))
+    #         output.append((net(image), label))
 
-            if i % 2 == 1:
-                if output
-                net.compute_gradient(output[0], output[1])
-                del output[:]
+    #         if i % 2 == 1:
+
+    #             net.compute_gradient(output[0], output[1])
+    #             del output[:]
