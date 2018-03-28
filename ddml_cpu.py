@@ -202,6 +202,40 @@ class Net(nn.Module):
         else:
             self.logger.info("Gradient is not computed.")
 
+    def calculate_loss(self, sample1, sample2):
+
+        loss1 = 0.0
+        loss2 = 0.0
+        l = 0
+
+        feature1 = sample1['feature']
+        label1 = sample1['label']
+        feature2 = sample2['feature']
+        label2 = sample2['label']
+
+        if sample1['label'].int() == sample2['label']:
+            l = 1
+        else:
+            l = -1
+
+        # J1
+        c = 1 - l * (self.tao - (((self(feature1) - self(feature2)).norm().float()) ** 2))
+        loss1 = self._g(c) / 2
+
+        self.logger.debug("J1 = %f", loss1)
+
+        # J2
+        for _ in list(self.parameters()):
+            loss2 += float(_.norm(2))
+
+        loss2 = self.lambda_ * loss2 / 2
+
+        self.logger.debug("J2 = %f", loss2)
+
+        self.loss = loss1 + loss2
+
+        return self.loss
+
     def _g(self, z):
         """
         Generalized logistic loss function.
