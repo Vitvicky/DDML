@@ -84,7 +84,7 @@ class Net(nn.Module):
         self.lambda_ = lambda_
         self.loss = 0.0
         self.learning_rate = learning_rate
-        self.gradient = None
+        self.gradient = []
         self.logger = logging.getLogger(__name__)
 
     def forward(self, features):
@@ -192,7 +192,7 @@ class Net(nn.Module):
         """
         """
 
-        if self.gradient:
+        if not self.gradient:
             # update parameters
             for i, param in enumerate(self.parameters()):
                 param.data -= self.learning_rate * self.gradient[i].data
