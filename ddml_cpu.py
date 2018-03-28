@@ -152,8 +152,8 @@ class Net(nn.Module):
         delta_21_m[M] = self._g_derivative(c) * l * self._s_derivative(z2[M])
 
         for m in range(M):
-            delta_12_m[m] = torch.mv(params[m + 1][0].t(), delta_12_m[m + 1]) * self._s_derivative(z1[m])
-            delta_21_m[m] = torch.mv(params[m + 1][0].t(), delta_21_m[m + 1]) * self._s_derivative(z2[m])
+            delta_12_m[m] = params[m + 1][0].t() * delta_12_m[m + 1] * self._s_derivative(z1[m])
+            delta_21_m[m] = params[m + 1][0].t() * delta_21_m[m + 1] * self._s_derivative(z2[m])
 
         self.logger.debug("delta_ij(m) complete.")
 
