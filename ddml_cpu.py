@@ -40,12 +40,12 @@ class DDMLDataset(Dataset):
             from itertools import islice
             if size > 0:
                 for line in islice(f, size):
-                    row = [int(_) for _ in line.split(',')]
+                    row = [float(_) for _ in line.split(',')]
                     self.features.append(row[:-1])
                     self.labels.append(row[-1])
             else:
                 for line in f:
-                    row = [int(_) for _ in line.split(',')]
+                    row = [float(_) for _ in line.split(',')]
                     self.features.append(row[:-1])
                     self.labels.append(row[-1])
 
@@ -147,7 +147,7 @@ class Net(nn.Module):
         M = self.layer_count - 1 - 1
 
         # calculate c
-        c = 1 - l * (self.tao - (feature1 - feature2).norm())
+        c = 1 - l * (self.tao - ((feature1 - feature2).norm().float()) ** 2)
         delta_12_m[M] = self._g_derivative(c) * l * self._s_derivative(z1[M])
         delta_21_m[M] = self._g_derivative(c) * l * self._s_derivative(z2[M])
 
@@ -178,7 +178,7 @@ class Net(nn.Module):
         # combine two partial derivatve vectors
         gradient = []
 
-        for m in range(self.layer_count - 1):
+        form in range(self.layer_count - 1):
             gradient.append(partial_derivative_W_m[m])
             gradient.append(partial_derivative_b_m[m])
 
@@ -222,12 +222,9 @@ class Net(nn.Module):
         """
         return 1 - F.tanh(z) ** 2
 
-    def backward(self):
-        pass
-
 
 if __name__ == "__main__":
-    max_iter_count = 10
+    max_iter_count = 1
     batch_size = 10
     layer_shape = (784, 392, 28, 10)
 
@@ -238,8 +235,13 @@ if __name__ == "__main__":
     net = Net(layer_shape)
 
     for _ in range(max_iter_count):
-        for i, (image, labels) in enumerate(data_loader):
+        output = []
+        for i, (image, label) in enumerate(data_loader):
             image = Variable(image)
-            labels = Variable(labels)
 
-            net(image, labels)
+            output.append((net(image), label))
+
+            if i % 2 == 1:
+                if output
+                net.compute_gradient(output[0], output[1])
+                del output[:]
