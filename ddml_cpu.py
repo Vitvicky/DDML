@@ -178,7 +178,7 @@ class Net(nn.Module):
         # combine two partial derivatve vectors
         gradient = []
 
-        form in range(self.layer_count - 1):
+        for m in range(self.layer_count - 1):
             gradient.append(partial_derivative_W_m[m])
             gradient.append(partial_derivative_b_m[m])
 
