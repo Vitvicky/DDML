@@ -126,16 +126,19 @@ class Net(nn.Module):
         h1 = [feature1]
         z2 = []
         h2 = [feature2]
+
+        x1 = feature1
+        x2 = feature2
         for m in range(self.layer_count - 1):
             layer = self.layers[m]
-            feature1 = layer(feature1)
-            feature2 = layer(feature2)
-            z1.append(feature1)
-            z2.append(feature1)
-            feature1 = F.tanh(feature1)
-            feature2 = F.tanh(feature2)
-            h1.append(feature1)
-            h2.append(feature2)
+            x1 = layer(x1)
+            x2 = layer(x2)
+            z1.append(x1)
+            z2.append(x2)
+            x1 = F.tanh(x1)
+            x2 = F.tanh(x2)
+            h1.append(x1)
+            h2.append(x2)
 
         self.logger.debug("z(m) and h(m) complete.")
 
