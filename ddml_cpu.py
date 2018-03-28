@@ -103,7 +103,7 @@ class Net(nn.Module):
 
         return features
 
-    def compute_gradient(self, feature1, feature2, l):
+    def compute_gradient(self, sample1, sample2):
         """
         Compute gradient.
         -----------------
@@ -118,6 +118,16 @@ class Net(nn.Module):
         # b lies in 1, 3, 5...
         params = list(self.parameters())
         params = list(zip(params[::2], params[1::2]))
+
+        l = 0
+
+        feature1 = sample1['feature']
+        feature2 = sample2['feature']
+
+        if sample1['label'].int() == sample2['label']:
+            l = 1
+        else:
+            l = -1
 
         # calculate zi(m) and h(m)
         # zi(m) is the output of m-th layer without function tanh(x)
@@ -209,9 +219,7 @@ class Net(nn.Module):
         l = 0
 
         feature1 = sample1['feature']
-        label1 = sample1['label']
         feature2 = sample2['feature']
-        label2 = sample2['label']
 
         if sample1['label'].int() == sample2['label']:
             l = 1
