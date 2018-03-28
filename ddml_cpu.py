@@ -152,9 +152,9 @@ class Net(nn.Module):
         delta_12_m[M] = self._g_derivative(c) * l * self._s_derivative(z1[M])
         delta_21_m[M] = self._g_derivative(c) * l * self._s_derivative(z2[M])
 
-        for m in range(M):
-            delta_12_m[m] = params[m + 1][0].t() * delta_12_m[m + 1] * self._s_derivative(z1[m])
-            delta_21_m[m] = params[m + 1][0].t() * delta_21_m[m + 1] * self._s_derivative(z2[m])
+        for m in reversed(range(M)):
+            delta_12_m[m] = torch.mm(delta_12_m[m + 1], params[m + 1][0]) * self._s_derivative(z1[m])
+            delta_21_m[m] = torch.mm(delta_21_m[m + 1], params[m + 1][0]) * self._s_derivative(z2[m])
 
         self.logger.debug("delta_ij(m) complete.")
 
@@ -162,7 +162,7 @@ class Net(nn.Module):
         partial_derivative_W_m = []
 
         for m in range(self.layer_count - 1):
-            temp = (self.lambda_ * params[m][0]) + (delta_12_m[m].unsqueeze(1)) * (h1[m].unsqueeze(0)) + (delta_21_m[m].unsqueeze(1)) * (h2[m].unsqueeze(0))
+            temp = (self.lambda_ * params[m][0]) + (delta_12_m[m] * h1[m].t()).t() + (delta_21_m[m] * h2[m].t()).t()
             partial_derivative_W_m.append(temp)
 
         self.logger.debug("partial_derivative_W(m) complete.")
