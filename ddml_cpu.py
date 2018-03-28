@@ -198,7 +198,7 @@ class Net(nn.Module):
                 param.data -= self.learning_rate * self.gradient[i].data
 
             # clear gradient
-            del self.gradient
+            del self.gradient[:]
         else:
             self.logger.info("Gradient is not computed.")
 
