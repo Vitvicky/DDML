@@ -50,7 +50,7 @@ class DDMLDataset(Dataset):
                     self.labels.append(row[-1])
 
     def __getitem__(self, index):
-        return FloatTensor(self.features[index]), FloatTensor(self.labels[index])
+        return self.features[index], self.labels[index]
 
     def __len__(self):
         return len(self.features)
