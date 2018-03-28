@@ -148,6 +148,7 @@ class Net(nn.Module):
 
         # calculate c
         c = 1 - l * (self.tao - ((feature1 - feature2).norm().float()) ** 2)
+
         delta_12_m[M] = self._g_derivative(c) * l * self._s_derivative(z1[M])
         delta_21_m[M] = self._g_derivative(c) * l * self._s_derivative(z2[M])
 
