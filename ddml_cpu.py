@@ -40,17 +40,17 @@ class DDMLDataset(Dataset):
             from itertools import islice
             if size > 0:
                 for line in islice(f, size):
-                    row = [int(_) for _ in line.split(',')]
+                    row = [float(_) for _ in line.split(',')]
                     self.features.append(row[:-1])
                     self.labels.append(row[-1])
             else:
                 for line in f:
-                    row = [int(_) for _ in line.split(',')]
+                    row = [float(_) for _ in line.split(',')]
                     self.features.append(row[:-1])
                     self.labels.append(row[-1])
 
     def __getitem__(self, index):
-        return self.features[index], self.labels[index]
+        return FloatTensor(self.features[index]), self.labels[index]
 
     def __len__(self):
         return len(self.features)
