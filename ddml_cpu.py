@@ -192,7 +192,7 @@ class Net(nn.Module):
         """
         """
 
-        if not self.gradient:
+        if self.gradient:
             # update parameters
             for i, param in enumerate(self.parameters()):
                 param.data -= self.learning_rate * self.gradient[i].data
