@@ -245,3 +245,4 @@ if __name__ == "__main__":
 
     #             net.compute_gradient(output[0], output[1])
     #             del output[:]
+    pass
