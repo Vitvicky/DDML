@@ -332,7 +332,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01, learning_rate=0.0001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01, learning_rate=0.1)
     # net.cuda()
 
     if False:  # os.path.exists(pkl):
