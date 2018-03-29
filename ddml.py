@@ -321,7 +321,7 @@ class Net(nn.Module):
 if __name__ == '__main__':
     pkl = 'ddml.pkl'
 
-    train_sample_size = 5000
+    train_sample_size = 2000
     test_sample_size = 10000
 
     layer_shape = (784, 392, 196)
@@ -332,26 +332,26 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=1, tao=5, lambda_=0.01, learning_rate=0.001)
+    net = Net(layer_shape, beta=1, tao=10, lambda_=0.01, learning_rate=0.01)
     # net.cuda()
 
-    # if False:  # os.path.exists(pkl):
-    #     state_dict = torch.load(pkl)
-    #     net.load_state_dict(state_dict)
-    # else:
-    #     train_data = DDMLDataset(size=train_sample_size)
-    #     train_data_loader = DataLoader(dataset=train_data)
+    if False:  # os.path.exists(pkl):
+        state_dict = torch.load(pkl)
+        net.load_state_dict(state_dict)
+    else:
+        train_data = DDMLDataset(size=train_sample_size)
+        train_data_loader = DataLoader(dataset=train_data)
 
-    #     for i, (s1, s2) in enumerate(train_data_loader):
-    #         sample1 = {'feature': Variable(s1[0]), 'label': Variable(s1[1])}
-    #         sample2 = {'feature': Variable(s2[0]), 'label': Variable(s2[1])}
-    #         actual = int(sample1['label'].data) == int(sample2['label'].data)
-    #         net.compute_gradient(sample1, sample2)
-    #         net.backward()
-    #         loss1, loss2 = net.compute_loss(sample1, sample2)
-    #         logger.info("Iteration: %6d, %5s, Loss1: %9.6f, Loss2: %9.6f", i + 1, actual, loss1, loss2)
+        for i, (s1, s2) in enumerate(train_data_loader):
+            sample1 = {'feature': Variable(s1[0]), 'label': Variable(s1[1])}
+            sample2 = {'feature': Variable(s2[0]), 'label': Variable(s2[1])}
+            actual = int(sample1['label'].data) == int(sample2['label'].data)
+            net.compute_gradient(sample1, sample2)
+            net.backward()
+            loss1, loss2 = net.compute_loss(sample1, sample2)
+            logger.info("Iteration: %6d, %5s, Loss1: %9.6f, Loss2: %9.6f", i + 1, actual, loss1, loss2)
 
-    # torch.save(net.state_dict(), pkl)
+        torch.save(net.state_dict(), pkl)
 
     similar_correct = 0
     dissimilar_correct = 0
