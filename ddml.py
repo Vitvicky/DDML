@@ -236,7 +236,7 @@ class Net(nn.Module):
         if self.gradient:
             # update parameters
             for i, param in enumerate(self.parameters()):
-                param.data = param.data.sub(self.learning_rate * self.gradient[i].data)
+                param.data = param.data.sub(0.01 * self.learning_rate * self.gradient[i].data)
 
             # clear gradient
             del self.gradient[:]
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.001, learning_rate=0.0001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01, learning_rate=0.001)
     # net.cuda()
 
     if False:  # os.path.exists(pkl):
