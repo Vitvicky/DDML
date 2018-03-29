@@ -332,7 +332,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=5, tao=5, lambda_=0.01, learning_rate=0.001)
+    net = Net(layer_shape, beta=0.1, tao=5, lambda_=0.01, learning_rate=0.0001)
     # net.cuda()
 
     if False:  # os.path.exists(pkl):
@@ -351,7 +351,7 @@ if __name__ == '__main__':
             loss1, loss2 = net.compute_loss(sample1, sample2)
             logger.info("Iteration: %6d, %5s, Loss1: %9.6f, Loss2: %9.6f", i + 1, actual, loss1, loss2)
 
-        torch.save(net.state_dict(), pkl)
+        # torch.save(net.state_dict(), pkl)
 
     similar_correct = 0
     dissimilar_correct = 0
