@@ -79,7 +79,7 @@ class Net(nn.Module):
     """
     """
 
-    def __init__(self, layer_shape, beta=0.5, tao=5, lambda_=0.001, learning_rate=0.0001):
+    def __init__(self, layer_shape, beta=0.5, tao=5, lambda_=0.001, learning_rate=0.001):
         """
 
         :param layer_shape:
@@ -321,8 +321,8 @@ class Net(nn.Module):
 if __name__ == '__main__':
     pkl = 'ddml.pkl'
 
-    train_sample_size = 2000
-    test_sample_size = 10000
+    train_sample_size = 1000
+    test_sample_size = 100
 
     layer_shape = (784, 392, 196)
 
