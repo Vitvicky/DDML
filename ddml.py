@@ -321,7 +321,7 @@ class Net(nn.Module):
 if __name__ == '__main__':
     pkl = 'ddml.pkl'
 
-    train_sample_size = 10000
+    train_sample_size = 5000
     test_sample_size = 10000
 
     layer_shape = (784, 392, 196)
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.1, tao=10, lambda_=0.01, learning_rate=0.0001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01, learning_rate=0.0001)
     # net.cuda()
 
     if False:  # os.path.exists(pkl):
