@@ -63,9 +63,12 @@ class DDMLDataset(Dataset):
     def __getitem__(self, index):
         # return cuda.FloatTensor(self.features[index]), cuda.FloatTensor(self.labels[index])
         # return (FloatTensor(self.features[index]), FloatTensor(self.labels[index])), (FloatTensor(self.features[index]), FloatTensor(self.labels[index]))
+
         s1 = random.choice(self.data)
         s2 = random.choice(self.data)
-        return (FloatTensor(s1['feature']) / 255, FloatTensor(s1['label'])), (FloatTensor(s2['feature']) / 255, FloatTensor(s2['label']))
+
+        # return (FloatTensor(s1['feature']) / 255, FloatTensor(s1['label'])), (FloatTensor(s2['feature']) / 255, FloatTensor(s2['label']))
+        return (FloatTensor(s1['feature']), FloatTensor(s1['label'])), (FloatTensor(s2['feature']), FloatTensor(s2['label']))
 
     def __len__(self):
         # return len(self.features)
@@ -329,10 +332,10 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_sample_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.01, tao=5, lambda_=0.001, learning_rate=0.0001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.001, learning_rate=0.00001)
     # net.cuda()
 
-    if os.path.exists(pkl):
+    if False:  # os.path.exists(pkl):
         state_dict = torch.load(pkl)
         net.load_state_dict(state_dict)
     else:
