@@ -91,6 +91,40 @@ class Net(nn.Module):
         self.gradient = []
         self.logger = logging.getLogger(__name__)
 
+    def _compute_distance(self, feature1, feature2):
+        """
+        Compute the distance of two samples.
+        ------------------------------------
+        :param feature1: Variable
+        :param feature2: Variable
+        :return: The distance of the two sample.
+        """
+        return (self(feature1) - self(feature2)).data.norm() ** 2
+
+    def _g(self, z):
+        """
+        Generalized logistic loss function.
+        -----------------------------------
+        :param z:
+        """
+        return float((np.log(1 + np.exp(self.beta * z))) / self.beta)
+
+    def _g_derivative(self, z):
+        """
+        The derivative of g(z).
+        -----------------------
+        :param z:
+        """
+        return float(1 / (np.exp(-1 * self.beta * z) + 1))
+
+    def _s_derivative(self, z):
+        """
+        The derivative of tanh(z).
+        --------------------------
+        :param z:
+        """
+        return 1 - self._s(z) ** 2
+
     def forward(self, feature):
         """
         Do forward.
@@ -175,3 +209,10 @@ class Net(nn.Module):
             delta_ji_m[index][M] = (self._g_derivative(c) * l * (h_j_m[index][M + 1] - h_i_m[index][M + 1])) * self._s_derivative(z_j_m[index][M])
 
         # calculate delta(m)
+
+        for index, (si, sj) in enumerate(dataloader):
+            xi = Variable(si[0])
+            xj = Variable(sj[0])
+            for m in reversed(range(M)):
+                delta_ij_m[index][m] = torch.mm(delta_ij_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_i_m[index][m])
+                delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_j_m[index][m])
