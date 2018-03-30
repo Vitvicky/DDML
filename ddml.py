@@ -317,6 +317,7 @@ if __name__ == '__main__':
     net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01 * train_batch_size ** 2, learning_rate=1 / (train_epoch_number * train_batch_size ** 2))
     if cuda.is_available():
         net.cuda()
+        logger.info("Using cuda!")
 
     if os.path.exists(pkl):
         state_dict = torch.load(pkl)
