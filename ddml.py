@@ -4,7 +4,7 @@ import logging
 import math
 import numpy as np
 import torch
-# import torch.cuda as cuda
+import torch.cuda as cuda
 from torch import FloatTensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -46,7 +46,11 @@ class DDMLDataset(Dataset):
 
     def __getitem__(self, index):
         s = self.data[index]
-        return FloatTensor(s[0]), FloatTensor(s[1])
+
+        if cuda.is_available():
+            return cuda.FloatTensor(s[0]), cuda.FloatTensor(s[1])
+        else:
+            return FloatTensor(s[0]), FloatTensor(s[1])
 
     def __len__(self):
         # return len(self.features)
@@ -298,11 +302,11 @@ class Net(nn.Module):
 if __name__ == '__main__':
     pkl = 'ddml.pkl'
 
-    train_epoch_number = 200
-    train_batch_size = 20
+    train_epoch_number = 1000
+    train_batch_size = 50
     test_data_size = 100
 
-    layer_shape = (784, 392, 196)
+    layer_shape = (784, 392, 196, 98)
 
     # logger = setup_logger()
     logger = setup_logger(level=logging.INFO)
@@ -311,7 +315,8 @@ if __name__ == '__main__':
     test_data_loader = DataLoader(dataset=test_data)
 
     net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01 * train_batch_size ** 2, learning_rate=1 / (train_epoch_number * train_batch_size ** 2))
-    # net.cuda()
+    if cuda.is_available():
+        net.cuda()
 
     if os.path.exists(pkl):
         state_dict = torch.load(pkl)
