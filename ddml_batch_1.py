@@ -76,8 +76,6 @@ class DDMLDataset(Dataset):
 
 
 class Net(nn.Module):
-    """
-    """
 
     def __init__(self, layer_shape, beta=0.5, tao=5, lambda_=0.001, learning_rate=0.001):
         """
@@ -286,7 +284,8 @@ class Net(nn.Module):
 
     def _compute_distance(self, feature1, feature2):
         """
-
+        Compute the distance of two samples.
+        ------------------------------------
         :param feature1: Variable
         :param feature2: Variable
         :return: The distance of the two sample.
