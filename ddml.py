@@ -271,6 +271,8 @@ class Net(nn.Module):
         for si, sj in dataloader:
             xi = Variable(si[0])
             xj = Variable(sj[0])
+            yi = si[1]
+            yj = sj[1]
 
             if int(yi) == int(yj):
                 l = 1
