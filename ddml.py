@@ -313,7 +313,7 @@ if __name__ == '__main__':
 
     train_epoch_number = 5000
     train_batch_size = 10
-    test_data_size = 10000
+    test_data_size = 5000
 
     layer_shape = (784, 392, 196, 98)
 
