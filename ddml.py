@@ -40,7 +40,8 @@ class DDMLDataset(Dataset):
         self.data = []
 
         with open(self.file_path) as f:
-            for line in random.sample(list(f), 2 * self._size):
+            while len(self.data) < 2 * self._size:
+                line = random.choice(list(f))
                 row = [float(_) for _ in line.split(',')]
                 self.data.append((row[:-1], row[-1:]))
 
@@ -230,7 +231,7 @@ class Net(nn.Module):
         for m in range(self.layer_count - 1):
             for index in range(len(dataloader)):
                 partial_derivative_b_m[m] += (delta_ij_m[index][m] + delta_ji_m[index][m]).squeeze()
-        
+
         # combine two partial derivative vectors
         gradient = []
 
