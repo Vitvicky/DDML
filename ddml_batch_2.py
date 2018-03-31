@@ -318,7 +318,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_data_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.1, learning_rate=0.001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=1, learning_rate=0.001)
 
     pkl = "pkl/ddml({} {} {} {}).pkl".format(net.beta, net.tao, net.lambda_, net.learning_rate)
 
