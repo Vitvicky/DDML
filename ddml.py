@@ -229,4 +229,152 @@ class Net(nn.Module):
 
         for m in range(self.layer_count - 1):
             for index in range(len(dataloader)):
-                partial_derivative_b_m[m] += delta_ij_m[index][m] + delta_ji_m[index][m]
+                partial_derivative_b_m[m] += (delta_ij_m[index][m] + delta_ji_m[index][m]).squeeze()
+        
+        # combine two partial derivative vectors
+        gradient = []
+
+        for m in range(self.layer_count - 1):
+            gradient.append(partial_derivative_W_m[m])
+            gradient.append(partial_derivative_b_m[m])
+
+        self.gradient = gradient
+
+    def backward(self):
+        """
+        Doing backward propagation.
+        ---------------------------
+        """
+
+        if self.gradient:
+            # update parameters
+            for i, param in enumerate(self.parameters()):
+                param.data = param.data.sub(self.learning_rate * self.gradient[i].data)
+
+            # clear gradient
+            del self.gradient[:]
+        else:
+            self.logger.warning("Gradient is not computed.")
+
+    def compute_loss(self, dataloader):
+        """
+        Compute loss.
+        -------------
+        :param dataloader: DataLoader of train data batch.
+        :return:
+        """
+
+        loss1 = 0.0
+        loss2 = 0.0
+
+        # J1
+        for si, sj in dataloader:
+            xi = Variable(xi)
+            xj = Variable(xj)
+
+            if int(yi) == int(yj):
+                l = 1
+            else:
+                l = -1
+
+            dist = self._compute_distance(xi, xj)
+            c = 1 - l * (self.tao - dist)
+            loss1 += self._g(c)
+
+        loss1 = loss1 / 2
+
+        self.logger.debug("J1 = %f", loss1)
+
+        # J2
+        for p in list(self.parameters()):
+            loss2 += p.data.norm()
+
+        loss2 = self.lambda_ * loss2 / 2
+
+        self.logger.debug("J2 = %f", loss2)
+
+        return loss1, loss2
+
+    def is_similar(self, feature1, feature2):
+        """
+        Determine is two sample is from the same project.
+        ---------------------------------------------------
+        :param feature: Variable, the feature of sample1
+        :param feature: Variable, the feature of sample2
+        :return: the result and the distance of the two sample.
+        """
+        distance = self._compute_distance(feature1, feature2)
+        result = distance <= self.tao
+
+        return result, distance
+
+
+if __name__ == '__main__':
+
+    train_epoch_number = 1000
+    train_batch_size = 10
+    test_data_size = 100
+
+    layer_shape = (784, 392, 196, 98)
+
+    # logger = setup_logger()
+    logger = setup_logger(level=logging.INFO)
+
+    test_data = DDMLDataset(size=test_data_size)
+    test_data_loader = DataLoader(dataset=test_data)
+
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.01, learning_rate=0.001)
+
+    pkl = "pkl/ddml({} {} {} {}).pkl".format(net.beta, net.tao, net.lambda_, net.learning_rate)
+
+    if False:  # cuda.is_available():
+        net.cuda()
+        logger.info("Using cuda!")
+
+    if os.path.exists(pkl):
+        state_dict = torch.load(pkl)
+        net.load_state_dict(state_dict)
+    else:
+        for epoch in range(train_epoch_number):
+            train_data = DDMLDataset(size=train_batch_size)
+            train_data_loader = DataLoader(dataset=train_data)
+            net.compute_gradient(train_data_loader)
+            net.backward()
+            loss1, loss2 = net.compute_loss(train_data_loader)
+            logger.info("Iteration: %6d, Loss1: %9.3f, Loss2: %9.3f", epoch + 1, loss1, loss2)
+
+            torch.save(net.state_dict(), "pkl/ddml({} {} {} {}).pkl".format(net.beta, net.tao, net.lambda_, net.learning_rate))
+
+    similar_dist_sum = 0.0
+    dissimilar_dist_sum = 0.0
+    similar_incorrect = 0
+    dissimilar_incorrect = 0
+    similar_correct = 0
+    dissimilar_correct = 0
+    num = 0
+
+    for si, sj in test_data_loader:
+
+        actual = (int(yi) == int(yj))
+        result, dist = net.is_similar(xi, xj)
+
+        if actual:
+            similar_dist_sum += dist
+            if result:
+                similar_correct += 1
+            else:
+                similar_incorrect += 1
+        else:
+            dissimilar_dist_sum += dist
+            if not result:
+                dissimilar_correct += 1
+            else:
+                dissimilar_incorrect += 1
+
+        num += 1
+
+        logger.info("%6d, %5s, %5s, %9.3f", num, actual, result, dist)
+
+    logger.info("Similar Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
+    logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
+    logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
