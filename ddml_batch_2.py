@@ -187,7 +187,7 @@ class Net(nn.Module):
 
         for m in range(self.layer_count - 1):
             for i, (xi, yi) in enumerate(dataloader):
-                for j, (xj, yj) in enumerate(dataloader:)
+                for j, (xj, yj) in enumerate(dataloader):
                     partial_derivative_W_m[m] += (delta_ij_m[i][j][m] * h_i_m[i][m].t()).t() + (delta_ij_m[j][i][m] * h_i_m[j][m].t()).t()
 
         # calculate partial derivative of b
@@ -318,7 +318,7 @@ if __name__ == '__main__':
     test_data = DDMLDataset(size=test_data_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=1, tao=2, lambda_=0.1, learning_rate=0.001)
+    net = Net(layer_shape, beta=0.5, tao=5, lambda_=0.1, learning_rate=0.001)
 
     pkl = "pkl/ddml({} {} {} {}).pkl".format(net.beta, net.tao, net.lambda_, net.learning_rate)
 
