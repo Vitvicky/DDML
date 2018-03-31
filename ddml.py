@@ -354,6 +354,10 @@ if __name__ == '__main__':
     num = 0
 
     for si, sj in test_data_loader:
+        xi = Variable(si[0])
+        yi = si[1]
+        xj = Variable(sj[0])
+        yj = sj[1]
 
         actual = (int(yi) == int(yj))
         result, dist = net.is_similar(xi, xj)
