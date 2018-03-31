@@ -216,3 +216,17 @@ class Net(nn.Module):
             for m in reversed(range(M)):
                 delta_ij_m[index][m] = torch.mm(delta_ij_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_i_m[index][m])
                 delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_j_m[index][m])
+
+        # calculate partial derivative of W
+        partial_derivative_W_m = [self.lambda_ * params_M[m] for m in range(self.layer_count - 1)]
+
+        for m in range(self.layer_count - 1):
+            for index in range(len(dataloader))
+                partial_derivative_W_m[m] += (delta_ij_m[index][m] * h_i_m[index][m].t()).t() + (delta_ji_m[index][m] * h_i_m[index][m].t()).t()
+
+        # calculate partial derivative of b
+        partial_derivative_b_m = [self.lambda_ * params_b[m] for m in range(self.layer_count - 1)]
+
+        for m in range(self.layer_count - 1):
+            for index in range(len(dataloader)):
+                partial_derivative_b_m[m] += delta_ij_m[index][m] + delta_ji_m[index][m]

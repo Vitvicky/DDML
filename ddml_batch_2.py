@@ -195,7 +195,7 @@ class Net(nn.Module):
 
         for m in range(self.layer_count - 1):
             for i, (xi, yi) in enumerate(dataloader):
-                for j, (xj, yj) in enumerate(dataloader:)
+                for j, (xj, yj) in enumerate(dataloader):
                     partial_derivative_b_m[m] += delta_ij_m[i][j][m] + delta_ij_m[j][i][m]
 
         # combine two partial derivative vectors
