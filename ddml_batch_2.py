@@ -196,7 +196,7 @@ class Net(nn.Module):
         for m in range(self.layer_count - 1):
             for i in range(len(dataloader)):
                 for j in range(len(dataloader)):
-                    partial_derivative_b_m[m] += delta_ij_m[i][j][m] + delta_ij_m[j][i][m]
+                    partial_derivative_b_m[m] += (delta_ij_m[i][j][m] + delta_ij_m[j][i][m]).squeeze()
 
         # combine two partial derivative vectors
         gradient = []
