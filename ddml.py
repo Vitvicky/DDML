@@ -34,29 +34,32 @@ class DDMLDataset(Dataset):
     """
 
     file_path = 'fashion-mnist_test.csv'
+    dataset = []
+    with open(file_path) as f:
+        for line in f:
+            row = [float(_) for _ in line.split(',')]
+            dataset.append((row[:-1], row[-1:]))
 
     def __init__(self, size=10):
-        self._size = size
         self.data = []
 
-        with open(self.file_path) as f:
-            while len(self.data) < 2 * self._size:
-                line = random.choice(list(f))
-                row = [float(_) for _ in line.split(',')]
-                self.data.append((row[:-1], row[-1:]))
+        if cuda.is_available():
+            tensor = cuda.FloatTensor
+        else:
+            tensor = FloatTensor
+
+        while len(self.data) < size:
+            s1 = random.choice(DDMLDataset.dataset)
+            s2 = random.choice(DDMLDataset.dataset)
+
+            self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
 
     def __getitem__(self, index):
-        s1 = self.data[index]
-        s2 = self.data[index + 1]
-
-        if False:  # cuda.is_available():
-            return (cuda.FloatTensor(s1[0]), cuda.FloatTensor(s1[1])), (cuda.FloatTensor(s2[0]), cuda.FloatTensor(s2[1]))
-        else:
-            return (FloatTensor(s1[0]) / 255, FloatTensor(s1[1])), (FloatTensor(s2[0]) / 255, FloatTensor(s2[1]))
+        return self.data[index]
 
     def __len__(self):
         # return len(self.features)
-        return self._size
+        return len(self.data)
 
 
 class Net(nn.Module):
@@ -130,7 +133,7 @@ class Net(nn.Module):
         """
         Do forward.
         -----------
-        :param features: Variable, feature
+        :param feature: Variable, feature
         :return:
         """
 
@@ -153,15 +156,15 @@ class Net(nn.Module):
         # W lies in 0, 2, 4...
         # b lies in 1, 3, 5...
         params = list(self.parameters())
-        params_M = params[::2]
+        params_W = params[::2]
         params_b = params[1::2]
 
         # calculate z(m) and h(m)
         # z(m) is the output of m-th layer without function tanh(x)
-        z_i_m = [[0 for m in range(self.layer_count - 1)] for _ in range(len(dataloader))]
-        h_i_m = [[0 for m in range(self.layer_count)] for _ in range(len(dataloader))]
-        z_j_m = [[0 for m in range(self.layer_count - 1)] for _ in range(len(dataloader))]
-        h_j_m = [[0 for m in range(self.layer_count)] for _ in range(len(dataloader))]
+        z_i_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        h_i_m = [[0 for m in range(self.layer_count)] for index in range(len(dataloader))]
+        z_j_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        h_j_m = [[0 for m in range(self.layer_count)] for index in range(len(dataloader))]
 
         for index, (si, sj) in enumerate(dataloader):
             xi = Variable(si[0])
@@ -184,8 +187,8 @@ class Net(nn.Module):
         # calculate delta_ji(m)
         #
 
-        delta_ij_m = [[0 for m in range(self.layer_count - 1)] for _ in range(len(dataloader))]
-        delta_ji_m = [[0 for m in range(self.layer_count - 1)] for _ in range(len(dataloader))]
+        delta_ij_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        delta_ji_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
 
         # M = layer_count - 1, then we also need to project 1,2,3 to 0,1,2
         M = self.layer_count - 1 - 1
@@ -211,15 +214,13 @@ class Net(nn.Module):
 
         # calculate delta(m)
 
-        for index, (si, sj) in enumerate(dataloader):
-            xi = Variable(si[0])
-            xj = Variable(sj[0])
+        for index in range(len(dataloader)):
             for m in reversed(range(M)):
-                delta_ij_m[index][m] = torch.mm(delta_ij_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_i_m[index][m])
-                delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_M[m + 1]) * self._s_derivative(z_j_m[index][m])
+                delta_ij_m[index][m] = torch.mm(delta_ij_m[index][m + 1], params_W[m + 1]) * self._s_derivative(z_i_m[index][m])
+                delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_W[m + 1]) * self._s_derivative(z_j_m[index][m])
 
         # calculate partial derivative of W
-        partial_derivative_W_m = [self.lambda_ * params_M[m] for m in range(self.layer_count - 1)]
+        partial_derivative_W_m = [self.lambda_ * params_W[m] for m in range(self.layer_count - 1)]
 
         for m in range(self.layer_count - 1):
             for index in range(len(dataloader)):
@@ -302,23 +303,23 @@ class Net(nn.Module):
         """
         Determine is two sample is from the same project.
         ---------------------------------------------------
-        :param feature: Variable, the feature of sample1
-        :param feature: Variable, the feature of sample2
+        :param feature1: Variable, the feature of sample1
+        :param feature2: Variable, the feature of sample2
         :return: the result and the distance of the two sample.
         """
         distance = self._compute_distance(feature1, feature2)
-        result = distance <= self.tao
+        result = distance <= self.tao * 1.5
 
         return result, distance
 
 
 if __name__ == '__main__':
 
-    train_epoch_number = 5000
+    train_epoch_number = 10000
     train_batch_size = 10
-    test_data_size = 5000
+    test_data_size = 10000
 
-    layer_shape = (784, 392, 196, 98)
+    layer_shape = (784, 392, 196)
 
     # logger = setup_logger()
     logger = setup_logger(level=logging.INFO)
@@ -330,7 +331,7 @@ if __name__ == '__main__':
 
     pkl = "pkl/ddml({} {} {} {}).pkl".format(net.beta, net.tao, net.lambda_, net.learning_rate)
 
-    if False:  # cuda.is_available():
+    if cuda.is_available():
         net.cuda()
         logger.info("Using cuda!")
 
