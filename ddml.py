@@ -221,7 +221,7 @@ class Net(nn.Module):
         partial_derivative_W_m = [self.lambda_ * params_M[m] for m in range(self.layer_count - 1)]
 
         for m in range(self.layer_count - 1):
-            for index in range(len(dataloader))
+            for index in range(len(dataloader)):
                 partial_derivative_W_m[m] += (delta_ij_m[index][m] * h_i_m[index][m].t()).t() + (delta_ji_m[index][m] * h_i_m[index][m].t()).t()
 
         # calculate partial derivative of b
