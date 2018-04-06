@@ -331,7 +331,7 @@ def main():
     test_data = DDMLDataset(label=test_label, size=test_data_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.5, tao=20.0, b=5.0, learning_rate=0.0001)
+    net = Net(layer_shape, beta=2.5, tao=20.0, b=5.0, learning_rate=0.0001)
 
     pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, layer_shape, net.beta, net.tao)
     txt = "pkl/ddml({}: {}-{}-{}).txt".format(test_label, layer_shape, net.beta, net.tao)
