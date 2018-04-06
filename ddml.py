@@ -1,7 +1,7 @@
 import os
-import math
 import random
 import logging
+import math
 import torch
 import torch.cuda as cuda
 from torch import FloatTensor
@@ -74,20 +74,22 @@ class DDMLDataset(Dataset):
         return self.data[index]
 
     def __len__(self):
+        # return len(self.features)
         return len(self.data)
 
 
-class DDMLNet(nn.Module):
+class Net(nn.Module):
 
-    def __init__(self, layer_shape, beta=0.5, tao=5.0, learning_rate=0.01):
+    def __init__(self, layer_shape, beta=0.5, tao=5.0, lambda_=0.01, learning_rate=0.01):
         """
 
         :param layer_shape:
         :param beta:
         :param tao:
+        :param lambda_:
         :param learning_rate:
         """
-        super(DDMLNet, self).__init__()
+        super(Net, self).__init__()
 
         self.layer_count = len(layer_shape)
         self.layers = []
@@ -104,17 +106,18 @@ class DDMLNet(nn.Module):
 
         self.beta = beta
         self.tao = tao
+        self.lambda_ = lambda_
         self.learning_rate = learning_rate
         self.gradient = []
         self.logger = logging.getLogger(__name__)
 
-    def g(self, z):
+    def _g(self, z):
         """
         Generalized logistic loss function.
         -----------------------------------
         :param z:
         """
-        return torch.log(1 + torch.exp(self.beta * z)) / self.beta
+        return float(math.log(1 + math.exp(self.beta * z)) / self.beta)
 
     def _g_derivative(self, z):
         """
@@ -122,7 +125,7 @@ class DDMLNet(nn.Module):
         -----------------------
         :param z:
         """
-        return float(1 / (torch.exp(-1 * self.beta * z) + 1))
+        return float(1 / (math.exp(-1 * self.beta * z) + 1))
 
     def _s_derivative(self, z):
         """
@@ -132,43 +135,186 @@ class DDMLNet(nn.Module):
         """
         return 1 - self._s(z) ** 2
 
-    def forward(self, feature1, feature2):
+    def forward(self, feature):
         """
         Do forward.
         -----------
-        :param feature1: Variable
-        :param feature2: Variable
+        :param feature: Variable, feature
         :return:
         """
 
         # project features through net
-        x1 = feature1
-        x2 = feature2
+        x = feature
         for layer in self.layers:
-            x1 = layer(x1)
-            x1 = self._s(x1)
-            x2 = layer(x2)
-            x2 = self._s(x2)
+            x = layer(x)
+            x = self._s(x)
 
-        return (x2 - x1).norm() ** 2
+        return x
 
+    def compute_gradient(self, dataloader):
+        """
+        Compute gradient.
+        -----------------
+        :param dataloader: DataLoader of train data pairs batch.
+        :return:
+        """
 
-class DDMLLoss(nn.Module):
+        # W lies in 0, 2, 4...
+        # b lies in 1, 3, 5...
+        params = list(self.parameters())
+        params_W = params[::2]
+        params_b = params[1::2]
 
-    @staticmethod
-    def forward(distance, l, net):
+        # calculate z(m) and h(m)
+        # z(m) is the output of m-th layer without function tanh(x)
+        z_i_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        h_i_m = [[0 for m in range(self.layer_count)] for index in range(len(dataloader))]
+        z_j_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        h_j_m = [[0 for m in range(self.layer_count)] for index in range(len(dataloader))]
+
+        for index, (si, sj) in enumerate(dataloader):
+            xi = Variable(si[0])
+            xj = Variable(sj[0])
+            h_i_m[index][0] = xi
+            h_j_m[index][0] = xj
+            for m in range(self.layer_count - 1):
+                layer = self.layers[m]
+                xi = layer(xi)
+                xj = layer(xj)
+                z_i_m[index][m] = xi
+                z_j_m[index][m] = xj
+                xi = self._s(xi)
+                xj = self._s(xj)
+                h_i_m[index][m + 1] = xi
+                h_j_m[index][m + 1] = xj
+
+        #
+        # calculate delta_ij(m)
+        # calculate delta_ji(m)
+        #
+
+        delta_ij_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+        delta_ji_m = [[0 for m in range(self.layer_count - 1)] for index in range(len(dataloader))]
+
+        # M = layer_count - 1, then we also need to project 1,2,3 to 0,1,2
+        M = self.layer_count - 1 - 1
+
+        # calculate delta(M)
+        for index, (si, sj) in enumerate(dataloader):
+            xi = Variable(si[0])
+            xj = Variable(sj[0])
+            yi = si[1]
+            yj = sj[1]
+
+            # calculate c
+            if int(yi) == int(yj):
+                l = 1
+            else:
+                l = -1
+
+            c = 1 - l * (self.tao - self.compute_distance(xi, xj))
+
+            # h(m) have M + 1 values and m start from 0, in fact, delta_ij_m have M value and m start from 1
+            delta_ij_m[index][M] = (self._g_derivative(c) * l * (h_i_m[index][M + 1] - h_j_m[index][M + 1])) * self._s_derivative(z_i_m[index][M])
+            delta_ji_m[index][M] = (self._g_derivative(c) * l * (h_j_m[index][M + 1] - h_i_m[index][M + 1])) * self._s_derivative(z_j_m[index][M])
+
+        # calculate delta(m)
+
+        for index in range(len(dataloader)):
+            for m in reversed(range(M)):
+                delta_ij_m[index][m] = torch.mm(delta_ij_m[index][m + 1], params_W[m + 1]) * self._s_derivative(z_i_m[index][m])
+                delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_W[m + 1]) * self._s_derivative(z_j_m[index][m])
+
+        # calculate partial derivative of W
+        partial_derivative_W_m = [self.lambda_ * params_W[m] for m in range(self.layer_count - 1)]
+
+        for m in range(self.layer_count - 1):
+            for index in range(len(dataloader)):
+                partial_derivative_W_m[m] += (delta_ij_m[index][m] * h_i_m[index][m].t()).t() + (delta_ji_m[index][m] * h_i_m[index][m].t()).t()
+
+        # calculate partial derivative of b
+        partial_derivative_b_m = [self.lambda_ * params_b[m] for m in range(self.layer_count - 1)]
+
+        for m in range(self.layer_count - 1):
+            for index in range(len(dataloader)):
+                partial_derivative_b_m[m] += (delta_ij_m[index][m] + delta_ji_m[index][m]).squeeze()
+
+        # combine two partial derivative vectors
+        gradient = []
+
+        for m in range(self.layer_count - 1):
+            gradient.append(partial_derivative_W_m[m])
+            gradient.append(partial_derivative_b_m[m])
+
+        self.gradient = gradient
+
+    def backward(self):
+        """
+        Doing backward propagation.
+        ---------------------------
+        """
+
+        if self.gradient:
+            # update parameters
+            for i, param in enumerate(self.parameters()):
+                param.data = param.data.sub(self.learning_rate * self.gradient[i].data)
+
+            # clear gradient
+            del self.gradient[:]
+        else:
+            self.logger.warning("Gradient is not computed.")
+
+    def compute_loss(self, dataloader):
         """
         Compute loss.
         -------------
-        :param distance: Variable
-        :param l:
-        :param net: ddml network
+        :param dataloader: DataLoader of train data batch.
         :return:
         """
-        c = 1 - l * (net.tao - distance)
-        loss1 = net.g(c) / 2
 
-        return loss1
+        loss1 = 0.0
+        loss2 = 0.0
+
+        # J1
+        for si, sj in dataloader:
+            xi = Variable(si[0], requires_grad = True)
+            xj = Variable(sj[0], requires_grad = True)
+            yi = si[1]
+            yj = sj[1]
+
+            if int(yi) == int(yj):
+                l = 1
+            else:
+                l = -1
+
+            dist = self.compute_distance(xi, xj)
+            # dist = (self(xi) - self(xj)).data.norm()
+            c = 1 - l * (self.tao - dist)
+            loss1 += self._g(c)
+
+        loss1 = loss1 / 2
+
+        self.logger.debug("J1 = %f", loss1)
+
+        # J2
+        for p in list(self.parameters()):
+            loss2 += p.data.norm()
+
+        loss2 = self.lambda_ * loss2 / 2
+
+        self.logger.debug("J2 = %f", loss2)
+
+        return loss1, loss2
+
+    def compute_distance(self, feature1, feature2):
+        """
+        Compute the distance of two samples.
+        ------------------------------------
+        :param feature1: Variable
+        :param feature2: Variable
+        :return: The distance of the two sample.
+        """
+        return (self(feature1) - self(feature2)).data.norm() ** 2
 
 
 def main():
@@ -180,18 +326,18 @@ def main():
 
     layer_shape = (784, 1568, 392)
 
+    # logger = setup_logger()
     logger = setup_logger(level=logging.INFO)
 
     test_data = DDMLDataset(label=test_label, size=test_data_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = DDMLNet(layer_shape, beta=0.5, tao=5.0, learning_rate=0.01)
+    net = Net(layer_shape, beta=0.5, tao=5.0, lambda_=0.001, learning_rate=0.01)
 
+    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, net.beta, net.tao, net.lambda_)
     # if cuda.is_available():
     #     net.cuda()
     #     logger.info("Using cuda!")
-
-    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, net.beta, net.tao, net.lambda_)
 
     if os.path.exists(pkl):
         state_dict = torch.load(pkl)
@@ -205,3 +351,95 @@ def main():
         net.backward()
         loss1, loss2 = net.compute_loss(train_data_loader)
         logger.info("Iteration: %6d, Loss1: %6.3f, Loss2: %6.3f", epoch + 1, loss1, loss2)
+
+    torch.save(net.state_dict(), pkl)
+
+    #
+    # test
+    #
+
+    similar_dist_sum = 0.0
+    dissimilar_dist_sum = 0.0
+    similar_incorrect = 0
+    dissimilar_incorrect = 0
+    similar_correct = 0
+    dissimilar_correct = 0
+    num = 0
+
+    distance_list = [0 for l in DDMLDataset.labels]
+    pairs_count = [0 for l in DDMLDataset.labels]
+
+    for si, sj in test_data_loader:
+        xi = Variable(si[0])
+        yi = int(si[1])
+        xj = Variable(sj[0])
+        yj = int(sj[1])
+
+        actual = (yi == yj)
+        dist = net.compute_distance(xi, xj)
+        result = (dist <= net.tao)
+
+        distance_list[yj] += dist
+        pairs_count[yj] += 1
+
+        if actual:
+            similar_dist_sum += dist
+            if result:
+                similar_correct += 1
+            else:
+                similar_incorrect += 1
+        else:
+            dissimilar_dist_sum += dist
+            if not result:
+                dissimilar_correct += 1
+            else:
+                dissimilar_incorrect += 1
+
+        num += 1
+
+        logger.info("%6d, %2d, %2d, %9.3f", num, int(yi), int(yj), dist)
+
+    logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
+    logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
+    logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
+
+    print('   ', end='')
+    for label in DDMLDataset.labels:
+        print('{:^7}'.format(label), end='\t')
+    print('\n{}: '.format(test_label), end='')
+
+    for l in DDMLDataset.labels:
+        try:
+            v = '{:.3f}'.format(distance_list[l] / pairs_count[l])
+        except ZeroDivisionError:
+            v = ' None '
+
+        print(v, end='\t')
+
+
+if __name__ == '__main__':
+    main()
+
+# def main_old():
+# distance_matrix = [[0 for l2 in DDMLDataset.labels] for l1 in DDMLDataset.labels]
+# pairs_count = [[0 for l2 in DDMLDataset.labels] for l1 in DDMLDataset.labels]
+#
+# for si, sj in test_data_loader:
+#     distance_matrix[l1][l2] += dist
+#     pairs_count[l1][l2] += 1
+
+# print('   ', end='')
+# for label in DDMLDataset.labels:
+#     print('{:^7}'.format(label), end='\t')
+#
+# print()
+#
+# for l1 in DDMLDataset.labels:
+#     print(l1, end=': ')
+#     for l2 in DDMLDataset.labels:
+#         try:
+#             v = '{:.3f}'.format(distance_matrix[l1][l2] / pairs_count[l1][l2])
+#         except ZeroDivisionError:
+#             v = ' None '
+#         print(v, end='\t')
+#     print()
