@@ -284,7 +284,7 @@ def main():
     test_label = 0
 
     train_epoch_number = 10000
-    train_batch_size = 100
+    train_batch_size = 1
     test_data_size = 10000
 
     layer_shape = (784, 1568, 392)

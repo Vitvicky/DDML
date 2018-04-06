@@ -3,7 +3,7 @@ import random
 import logging
 import math
 import torch
-import torch.cuda as cuda
+# import torch.cuda as cuda
 from torch import FloatTensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -80,13 +80,12 @@ class DDMLDataset(Dataset):
 
 class Net(nn.Module):
 
-    def __init__(self, layer_shape, beta=0.5, tao=5.0, lambda_=0.01, learning_rate=0.01):
+    def __init__(self, layer_shape, beta=0.5, tao=5.0, b=1.0, learning_rate=0.0001):
         """
 
         :param layer_shape:
         :param beta:
         :param tao:
-        :param lambda_:
         :param learning_rate:
         """
         super(Net, self).__init__()
@@ -106,7 +105,7 @@ class Net(nn.Module):
 
         self.beta = beta
         self.tao = tao
-        self.lambda_ = lambda_
+        self.b = b
         self.learning_rate = learning_rate
         self.gradient = []
         self.logger = logging.getLogger(__name__)
@@ -212,7 +211,7 @@ class Net(nn.Module):
             else:
                 l = -1
 
-            c = 1 - l * (self.tao - self.compute_distance(xi, xj))
+            c = self.b - l * (self.tao - self.compute_distance(xi, xj))
 
             # h(m) have M + 1 values and m start from 0, in fact, delta_ij_m have M value and m start from 1
             delta_ij_m[index][M] = (self._g_derivative(c) * l * (h_i_m[index][M + 1] - h_j_m[index][M + 1])) * self._s_derivative(z_i_m[index][M])
@@ -226,14 +225,14 @@ class Net(nn.Module):
                 delta_ji_m[index][m] = torch.mm(delta_ji_m[index][m + 1], params_W[m + 1]) * self._s_derivative(z_j_m[index][m])
 
         # calculate partial derivative of W
-        partial_derivative_W_m = [self.lambda_ * params_W[m] for m in range(self.layer_count - 1)]
+        partial_derivative_W_m = [0 * params_W[m] for m in range(self.layer_count - 1)]
 
         for m in range(self.layer_count - 1):
             for index in range(len(dataloader)):
                 partial_derivative_W_m[m] += (delta_ij_m[index][m] * h_i_m[index][m].t()).t() + (delta_ji_m[index][m] * h_i_m[index][m].t()).t()
 
         # calculate partial derivative of b
-        partial_derivative_b_m = [self.lambda_ * params_b[m] for m in range(self.layer_count - 1)]
+        partial_derivative_b_m = [0 * params_b[m] for m in range(self.layer_count - 1)]
 
         for m in range(self.layer_count - 1):
             for index in range(len(dataloader)):
@@ -273,12 +272,12 @@ class Net(nn.Module):
         """
 
         loss1 = 0.0
-        loss2 = 0.0
+        # loss2 = 0.0
 
         # J1
         for si, sj in dataloader:
-            xi = Variable(si[0], requires_grad = True)
-            xj = Variable(sj[0], requires_grad = True)
+            xi = Variable(si[0])
+            xj = Variable(sj[0])
             yi = si[1]
             yj = sj[1]
 
@@ -289,7 +288,7 @@ class Net(nn.Module):
 
             dist = self.compute_distance(xi, xj)
             # dist = (self(xi) - self(xj)).data.norm()
-            c = 1 - l * (self.tao - dist)
+            c = self.b - l * (self.tao - dist)
             loss1 += self._g(c)
 
         loss1 = loss1 / 2
@@ -297,14 +296,14 @@ class Net(nn.Module):
         self.logger.debug("J1 = %f", loss1)
 
         # J2
-        for p in list(self.parameters()):
-            loss2 += p.data.norm()
+        # for p in list(self.parameters()):
+        #     loss2 += p.data.norm()
+        #
+        # loss2 = self.lambda_ * loss2 / 2
+        #
+        # self.logger.debug("J2 = %f", loss2)
 
-        loss2 = self.lambda_ * loss2 / 2
-
-        self.logger.debug("J2 = %f", loss2)
-
-        return loss1, loss2
+        return loss1
 
     def compute_distance(self, feature1, feature2):
         """
@@ -320,11 +319,11 @@ class Net(nn.Module):
 def main():
     test_label = 0
 
-    train_epoch_number = 10000
+    train_epoch_number = 100
     train_batch_size = 100
     test_data_size = 10000
 
-    layer_shape = (784, 1568, 392)
+    layer_shape = (784, 1568, 196)
 
     # logger = setup_logger()
     logger = setup_logger(level=logging.INFO)
@@ -332,9 +331,11 @@ def main():
     test_data = DDMLDataset(label=test_label, size=test_data_size)
     test_data_loader = DataLoader(dataset=test_data)
 
-    net = Net(layer_shape, beta=0.5, tao=5.0, lambda_=0.001, learning_rate=0.01)
+    net = Net(layer_shape, beta=0.5, tao=20.0, b=5.0, learning_rate=0.0001)
 
-    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, net.beta, net.tao, net.lambda_)
+    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, layer_shape, net.beta, net.tao)
+    txt = "pkl/ddml({}: {}-{}-{}).txt".format(test_label, layer_shape, net.beta, net.tao)
+
     # if cuda.is_available():
     #     net.cuda()
     #     logger.info("Using cuda!")
@@ -344,13 +345,16 @@ def main():
         net.load_state_dict(state_dict)
         logger.info("Load state from file.")
 
+    loss_sum = 0.0
+
     for epoch in range(train_epoch_number):
         train_data = DDMLDataset(label=test_label, size=train_batch_size)
         train_data_loader = DataLoader(dataset=train_data)
         net.compute_gradient(train_data_loader)
         net.backward()
-        loss1, loss2 = net.compute_loss(train_data_loader)
-        logger.info("Iteration: %6d, Loss1: %6.3f, Loss2: %6.3f", epoch + 1, loss1, loss2)
+        loss = net.compute_loss(train_data_loader)
+        loss_sum += loss
+        logger.info("Iteration: %6d, Loss: %6.3f, Average Loss: %6.3f", epoch + 1, loss, loss_sum / (epoch + 1))
 
     torch.save(net.state_dict(), pkl)
 
@@ -377,7 +381,7 @@ def main():
 
         actual = (yi == yj)
         dist = net.compute_distance(xi, xj)
-        result = (dist <= net.tao)
+        result = (dist <= net.tao - net.b)
 
         distance_list[yj] += dist
         pairs_count[yj] += 1
@@ -403,18 +407,25 @@ def main():
     logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
     logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
 
-    print('   ', end='')
-    for label in DDMLDataset.labels:
-        print('{:^7}'.format(label), end='\t')
-    print('\n{}: '.format(test_label), end='')
+    with open(txt, mode='a') as t:
 
-    for l in DDMLDataset.labels:
-        try:
-            v = '{:.3f}'.format(distance_list[l] / pairs_count[l])
-        except ZeroDivisionError:
-            v = ' None '
+        print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
+        print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
 
-        print(v, end='\t')
+        print('   ', end='', file=t)
+        for label in DDMLDataset.labels:
+            print('{:^7}'.format(label), end='\t', file=t)
+        print('\n{}: '.format(test_label), end='', file=t)
+
+        for l in DDMLDataset.labels:
+            try:
+                v = '{:.3f}'.format(distance_list[l] / pairs_count[l])
+            except ZeroDivisionError:
+                v = ' None '
+
+            print(v, end='\t', file=t)
+
+        print('\n', file=t)
 
 
 if __name__ == '__main__':
