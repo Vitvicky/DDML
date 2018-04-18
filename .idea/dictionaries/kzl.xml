@@ -2,8 +2,11 @@
   <dictionary name="kzl">
     <words>
       <w>cuda</w>
+      <w>dataloader</w>
       <w>dataset</w>
+      <w>ddml</w>
       <w>softmax</w>
+      <w>stdv</w>
     </words>
   </dictionary>
 </component>
