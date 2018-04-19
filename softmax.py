@@ -341,7 +341,7 @@ class DDMLNet(nn.Module):
         #
         # pairwise backward
         #
-        # gradient = self._compute_gradient(dataloader)
+        gradient = self._compute_gradient(dataloader)
 
         # update parameters
         for i, param in enumerate(self.parameters()):
