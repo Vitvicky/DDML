@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
+from sklearn.metrics import confusion_matrix
 
 
 def setup_logger(level=logging.DEBUG):
@@ -362,11 +363,11 @@ class DDMLNet(nn.Module):
 def main():
     test_label = 0
 
-    train_epoch_number = 1000
-    train_batch_size = 1
+    train_epoch_number = 100
+    train_batch_size = 10
     test_data_size = 10000
 
-    layer_shape = (784, 1568, 196)
+    layer_shape = (784, 1568, 1568, 784, 100)
 
     # logger = setup_logger()
     logger = setup_logger(level=logging.INFO)
@@ -391,12 +392,12 @@ def main():
     loss_sum = 0.0
 
     for epoch in range(train_epoch_number):
-        train_data = DDMLDataset(label=None, size=train_batch_size)
+        train_data = DDMLDataset(label=test_label, size=train_batch_size)
         train_data_loader = DataLoader(dataset=train_data)
         net.backward(train_data_loader)
         loss = net.loss(train_data_loader)
         loss_sum += loss
-        logger.info("Iteration: %6d, Loss: %6.3f, Average Loss: %6.3f", epoch + 1, loss, loss_sum / (epoch + 1))
+        logger.info("Iteration: %6d, Loss: %6.3f, Average Loss: %9.6f", epoch + 1, loss, loss_sum / (epoch + 1))
 
     torch.save(net.state_dict(), pkl)
 
@@ -410,6 +411,9 @@ def main():
     dissimilar_incorrect = 0
     similar_correct = 0
     dissimilar_correct = 0
+    softmax_correct = 0
+    predictions = []
+    actuals = []
     num = 0
 
     distance_list = [0 for l in DDMLDataset.labels]
@@ -443,14 +447,25 @@ def main():
 
         num += 1
 
-        logger.info("%6d, %2d, %2d, %9.3f", num, int(yi), int(yj), dist)
+        prediction = int(torch.max(net.softmax_forward(xj).data, 1)[1])
+        actuals.append(yj)
+        predictions.append(prediction)
 
+        if prediction == yj:
+            softmax_correct += 1
+
+        logger.info("%6d, %2d, %2d, %2d, %9.3f", num, int(yi), int(yj), prediction, dist)
+
+    logger.info("Softmax Classification: %.6f", softmax_correct / test_data_size)
     logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
     logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
     logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
 
+    cm = confusion_matrix(actuals, predictions, labels=sorted(DDMLDataset.labels))
+
     with open(txt, mode='a') as t:
 
+        print("Softmax Classification: {}".format(softmax_correct / test_data_size), file=t)
         print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
         print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
 
@@ -466,6 +481,9 @@ def main():
                 v = ' None '
 
             print(v, end='\t', file=t)
+
+        print('\n', file=t)
+        print(cm, file=t)
 
         print('\n', file=t)
 
