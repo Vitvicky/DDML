@@ -4,7 +4,7 @@ import logging
 import math
 import torch
 import torch.cuda as cuda
-from torch import FloatTensor
+from torch import FloatTensor, LongTensor
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
@@ -85,7 +85,7 @@ class DDMLDataset(Dataset):
 
 class DDMLNet(nn.Module):
 
-    def __init__(self, layer_shape, beta=0.5, tao=5.0, b=1.0, learning_rate=0.0001):
+    def __init__(self, layer_shape, beta=1.0, tao=5.0, b=1.0, learning_rate=0.001):
         """
 
         :param layer_shape:
@@ -212,8 +212,8 @@ class DDMLNet(nn.Module):
         for index, (si, sj) in enumerate(dataloader):
             xi = Variable(si[0], requires_grad=True)
             xj = Variable(sj[0], requires_grad=True)
-            yi = Variable(si[1])
-            yj = Variable(sj[1])
+            yi = Variable(si[1].type(LongTensor).squeeze())
+            yj = Variable(sj[1].type(LongTensor).squeeze())
 
             optimizer.zero_grad()
             xi = self.softmax_forward(xi)
@@ -340,7 +340,8 @@ class DDMLNet(nn.Module):
 
         # update parameters
         for i, param in enumerate(self.parameters()):
-            param.data = param.data.sub(self.learning_rate * gradient[i].data)
+            if i < 2 * (self.layer_count - 1):
+                param.data.sub_(self.learning_rate * gradient[i].data)
 
     def compute_distance(self, input1, input2):
         """
@@ -351,3 +352,153 @@ class DDMLNet(nn.Module):
         :return: The distance of the two sample.
         """
         return (self(input1) - self(input2)).data.norm() ** 2
+
+
+def main():
+    test_label = 1
+
+    train_epoch_number = 10000
+    train_batch_size = 1
+    test_data_size = 10000
+
+    layer_shape = (784, 1568, 196)
+
+    # logger = setup_logger()
+    logger = setup_logger(level=logging.INFO)
+
+    test_data = DDMLDataset(label=test_label, size=test_data_size)
+    test_data_loader = DataLoader(dataset=test_data)
+
+    net = DDMLNet(layer_shape, beta=1.0, tao=10.0, b=1.0, learning_rate=0.001)
+
+    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, layer_shape, net.beta, net.tao)
+    txt = "pkl/ddml({}: {}-{}-{}).txt".format(test_label, layer_shape, net.beta, net.tao)
+
+    if cuda.is_available():
+        net.cuda()
+        logger.info("Using cuda!")
+
+    if os.path.exists(pkl):
+        state_dict = torch.load(pkl)
+        net.load_state_dict(state_dict)
+        logger.info("Load state from file.")
+
+    loss_sum = 0.0
+
+    for epoch in range(train_epoch_number):
+        train_data = DDMLDataset(label=test_label, size=train_batch_size)
+        train_data_loader = DataLoader(dataset=train_data)
+        net.backward(train_data_loader)
+        loss = net.loss(train_data_loader)
+        loss_sum += loss
+        logger.info("Iteration: %6d, Loss: %6.3f, Average Loss: %6.3f", epoch + 1, loss, loss_sum / (epoch + 1))
+
+    torch.save(net.state_dict(), pkl)
+
+    #
+    # test (without test label)
+    #
+
+    similar_dist_sum = 0.0
+    dissimilar_dist_sum = 0.0
+    similar_incorrect = 0
+    dissimilar_incorrect = 0
+    similar_correct = 0
+    dissimilar_correct = 0
+    num = 0
+
+    for si, sj in test_data_loader:
+        xi = Variable(si[0])
+        yi = int(si[1])
+        xj = Variable(sj[0])
+        yj = int(sj[1])
+
+    #
+    # test (with test label)
+    #
+
+    # similar_dist_sum = 0.0
+    # dissimilar_dist_sum = 0.0
+    # similar_incorrect = 0
+    # dissimilar_incorrect = 0
+    # similar_correct = 0
+    # dissimilar_correct = 0
+    # num = 0
+    #
+    # distance_list = [0 for l in DDMLDataset.labels]
+    # pairs_count = [0 for l in DDMLDataset.labels]
+    #
+    # for si, sj in test_data_loader:
+    #     xi = Variable(si[0])
+    #     yi = int(si[1])
+    #     xj = Variable(sj[0])
+    #     yj = int(sj[1])
+    #
+    #     actual = (yi == yj)
+    #     dist = net.compute_distance(xi, xj)
+    #     result = (dist <= net.tao - net.b)
+    #
+    #     distance_list[yj] += dist
+    #     pairs_count[yj] += 1
+    #
+    #     if actual:
+    #         similar_dist_sum += dist
+    #         if result:
+    #             similar_correct += 1
+    #         else:
+    #             similar_incorrect += 1
+    #     else:
+    #         dissimilar_dist_sum += dist
+    #         if not result:
+    #             dissimilar_correct += 1
+    #         else:
+    #             dissimilar_incorrect += 1
+    #
+    #     num += 1
+    #
+    #     logger.info("%6d, %2d, %2d, %9.3f", num, int(yi), int(yj), dist)
+    #
+    # logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
+    # logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
+    # logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
+    #
+    # with open(txt, mode='a') as t:
+    #
+    #     print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
+    #     print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
+    #
+    #     print('   ', end='', file=t)
+    #     for label in DDMLDataset.labels:
+    #         print('{:^7}'.format(label), end='\t', file=t)
+    #     print('\n{}: '.format(test_label), end='', file=t)
+    #
+    #     for l in DDMLDataset.labels:
+    #         try:
+    #             v = '{:.3f}'.format(distance_list[l] / pairs_count[l])
+    #         except ZeroDivisionError:
+    #             v = ' None '
+    #
+    #         print(v, end='\t', file=t)
+    #
+    #     print('\n', file=t)
+
+
+if __name__ == '__main__':
+    main()
+    # test_label = 0
+    #
+    # train_epoch_number = 1000
+    # train_batch_size = 10
+    # test_data_size = 1
+    #
+    # layer_shape = (784, 1568, 196)
+    #
+    # net = DDMLNet(layer_shape, beta=2.5, tao=20.0, b=5.0, learning_rate=0.001)
+    #
+    # test_data = DDMLDataset(label=test_label, size=test_data_size)
+    # test_data_loader = DataLoader(dataset=test_data)
+    #
+    # for epoch in range(train_epoch_number):
+    #     train_data = DDMLDataset(label=test_label, size=train_batch_size)
+    #     train_data_loader = DataLoader(dataset=train_data)
+    #     net._softmax_backward(train_data_loader)
