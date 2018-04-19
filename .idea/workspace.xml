@@ -2,15 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="24a58537-0199-49ac-9b3b-1a6ce180f84c" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/ddml.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ddml.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Untitled.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Untitled.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-0.5-20.0).pkl" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-0.5-20.0).txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).pkl" beforeDir="false" afterPath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).pkl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).txt" beforeDir="false" afterPath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkl/ddml(0: (784, 1568, 196)-2.5-20.0).txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/softmax.py" beforeDir="false" afterPath="$PROJECT_DIR$/softmax.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -21,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/DDML$ddml.coverage" NAME="ddml Coverage Results" MODIFIED="1524117996844" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/DDML$ddml.coverage" NAME="ddml Coverage Results" MODIFIED="1524120791033" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
@@ -40,8 +35,8 @@
       <file leaf-file-name="softmax.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/softmax.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-721">
-              <caret line="413" column="23" selection-start-line="413" selection-start-column="23" selection-end-line="413" selection-end-column="23" />
+            <state relative-caret-position="-1278">
+              <caret line="227" column="25" selection-start-line="227" selection-start-column="25" selection-end-line="227" selection-end-column="25" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
                 <element signature="e#304#666#0" />
@@ -53,7 +48,6 @@
                 <element signature="e#3837#3975#0" />
                 <element signature="e#4016#4292#0" />
                 <element signature="e#4341#4599#0" />
-                <element signature="e#5318#6024#0" />
                 <element signature="e#6133#9934#0" />
                 <element signature="e#10545#10825#0" />
               </folding>
@@ -171,7 +165,14 @@
       <option name="project" value="LOCAL" />
       <updated>1523656516974</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="2018-0419-0136">
+      <created>1524119808082</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1524119808083</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -183,9 +184,9 @@
       <window_info anchor="bottom" id="Database Changes" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.32975295" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.32975295" />
       <window_info anchor="bottom" id="Terminal" order="7" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.13177083" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13177083" />
       <window_info anchor="bottom" id="Docker" order="8" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="right" id="SciView" order="3" />
@@ -209,7 +210,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="2018-0413-1654" />
-    <option name="LAST_COMMIT_MESSAGE" value="2018-0413-1654" />
+    <MESSAGE value="2018-0419-0136" />
+    <option name="LAST_COMMIT_MESSAGE" value="2018-0419-0136" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -249,7 +251,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -285,7 +286,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -321,7 +321,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -350,7 +349,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -379,7 +377,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -408,7 +405,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -437,7 +433,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -466,7 +461,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -495,7 +489,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -524,7 +517,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -553,7 +545,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -582,7 +573,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
@@ -600,13 +590,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="863">
           <caret line="670" column="8" selection-start-line="670" selection-start-column="8" selection-end-line="670" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/lib/python3.6/site-packages/torch/optim/sgd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="931">
-          <caret line="50" column="8" selection-start-line="50" selection-start-column="8" selection-end-line="50" selection-end-column="8" />
         </state>
       </provider>
     </entry>
@@ -678,10 +661,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file:///usr/lib/python3.6/site-packages/torch/optim/sgd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-289">
+          <caret line="63" column="8" selection-start-line="63" selection-start-column="8" selection-end-line="63" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/softmax.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-721">
-          <caret line="413" column="23" selection-start-line="413" selection-start-column="23" selection-end-line="413" selection-end-column="23" />
+        <state relative-caret-position="-1278">
+          <caret line="227" column="25" selection-start-line="227" selection-start-column="25" selection-end-line="227" selection-end-column="25" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
             <element signature="e#304#666#0" />
@@ -693,7 +683,6 @@
             <element signature="e#3837#3975#0" />
             <element signature="e#4016#4292#0" />
             <element signature="e#4341#4599#0" />
-            <element signature="e#5318#6024#0" />
             <element signature="e#6133#9934#0" />
             <element signature="e#10545#10825#0" />
           </folding>
