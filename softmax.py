@@ -212,8 +212,13 @@ class DDMLNet(nn.Module):
         for index, (si, sj) in enumerate(dataloader):
             xi = Variable(si[0], requires_grad=True)
             xj = Variable(sj[0], requires_grad=True)
-            yi = Variable(si[1].type(LongTensor).squeeze())
-            yj = Variable(sj[1].type(LongTensor).squeeze())
+
+            if cuda.is_available():
+                yi = Variable(si[1].type(cuda.LongTensor).squeeze())
+                yj = Variable(sj[1].type(cuda.LongTensor).squeeze())
+            else:
+                yi = Variable(si[1].type(LongTensor).squeeze())
+                yj = Variable(sj[1].type(LongTensor).squeeze())
 
             optimizer.zero_grad()
             xi = self.softmax_forward(xi)
@@ -339,9 +344,9 @@ class DDMLNet(nn.Module):
         # gradient = self._compute_gradient(dataloader)
 
         # update parameters
-        # for i, param in enumerate(self.parameters()):
-        #     if i < 2 * (self.layer_count - 1):
-        #         param.data.sub_(self.learning_rate * gradient[i].data)
+        for i, param in enumerate(self.parameters()):
+            if i < 2 * (self.layer_count - 1):
+                param.data.sub_(self.learning_rate * gradient[i].data)
 
     def compute_distance(self, input1, input2):
         """
