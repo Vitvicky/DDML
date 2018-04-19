@@ -6,3 +6,131 @@ Confusion Matrix:
       0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
 0: 4.250	6.997	6.326	5.577	5.703	12.339	5.341	11.618	8.635	11.216	
 
+Softmax Classification:  0.190
+Average Loss: 26.463
+Confusion Matrix:
+	    33	    59
+	    33	   875
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.462	7.394	6.305	6.187	5.615	12.545	5.151	12.422	8.875	11.975	
+
+Softmax Classification:  0.223
+Average Loss: 22.187
+Confusion Matrix:
+	    43	    66
+	    27	   864
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.006	8.309	6.629	6.237	6.436	13.210	5.371	13.701	9.821	13.666	
+
+Softmax Classification:  0.264
+Average Loss: 21.408
+Confusion Matrix:
+	    32	    67
+	    28	   873
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.112	8.203	7.175	6.131	6.021	13.829	5.166	15.121	10.947	14.265	
+
+Softmax Classification:  0.295
+Average Loss: 22.750
+Confusion Matrix:
+	    47	    59
+	    34	   860
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 3.906	8.206	6.499	6.506	5.914	14.116	6.133	15.293	11.101	14.118	
+
+Softmax Classification:  0.315
+Average Loss: 22.944
+Confusion Matrix:
+	    47	    61
+	    28	   864
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.275	8.530	6.550	6.300	6.135	16.204	5.640	18.567	11.756	15.378	
+
+Softmax Classification:  0.388
+Average Loss: 19.884
+Confusion Matrix:
+	    52	    75
+	    23	   850
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.232	9.102	7.009	6.647	6.940	16.260	6.051	18.014	12.696	16.869	
+
+Softmax Classification:  0.447
+Average Loss: 21.404
+Confusion Matrix:
+	    57	    66
+	    29	   848
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.060	9.393	7.228	6.092	7.065	16.846	5.433	19.807	12.129	17.322	
+
+Softmax Classification:  0.460
+Average Loss: 19.184
+Confusion Matrix:
+	    44	    67
+	    35	   854
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.921	10.489	7.404	6.463	6.753	17.768	6.240	20.118	13.738	19.123	
+
+Softmax Classification:  0.481
+Average Loss: 23.267
+Confusion Matrix:
+	    50	    64
+	    41	   845
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.298	10.269	6.703	6.473	6.498	17.256	5.870	20.140	12.860	18.352	
+
+Softmax Classification:  0.493
+Average Loss: 23.512
+Confusion Matrix:
+	    30	    61
+	    38	   871
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.553	11.008	7.007	7.197	7.412	17.812	6.137	20.302	13.425	18.851	
+
+Softmax Classification:  0.498
+Average Loss: 22.091
+Confusion Matrix:
+	    43	    47
+	    47	   863
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.247	11.277	6.978	6.738	6.618	16.856	5.510	22.010	13.412	20.356	
+
+Softmax Classification:  0.495
+Average Loss: 22.645
+Confusion Matrix:
+	    31	    72
+	    48	   849
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.815	13.248	6.788	7.137	6.436	17.675	5.484	21.512	13.230	19.162	
+
+Softmax Classification:  0.514
+Average Loss: 18.444
+Confusion Matrix:
+	    27	    62
+	    37	   874
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 5.689	13.034	7.861	8.864	7.926	19.984	6.319	24.142	16.074	23.790	
+
+Softmax Classification:  0.505
+Average Loss: 23.496
+Confusion Matrix:
+	    46	    62
+	    37	   855
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.550	13.656	7.767	7.090	7.723	20.202	5.658	23.865	15.353	22.250	
+
+Softmax Classification:  0.540
+Average Loss: 21.132
+Confusion Matrix:
+	    46	    61
+	    36	   857
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 4.495	14.382	7.479	7.378	7.867	21.139	6.640	27.466	16.347	24.918	
+
+Softmax Classification:  0.515
+Average Loss: 19.675
+Confusion Matrix:
+	    31	    76
+	    34	   859
+      0   	   1   	   2   	   3   	   4   	   5   	   6   	   7   	   8   	   9   	
+0: 5.517	15.295	8.406	7.208	8.757	22.153	6.773	26.235	16.674	23.651	
+
