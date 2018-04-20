@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 
 def setup_logger(level=logging.DEBUG):
@@ -411,7 +411,6 @@ def main():
     dissimilar_incorrect = 0
     similar_correct = 0
     dissimilar_correct = 0
-    softmax_correct = 0
     predictions = []
     actuals = []
     num = 0
@@ -454,15 +453,11 @@ def main():
         predictions.append(prediction_i)
         predictions.append(prediction_j)
 
-        if prediction_i == yj:
-            softmax_correct += 1
-
-        if prediction_j == yj:
-            softmax_correct += 1
-
         logger.info("%6d, %2d(%2d), %2d(%2d), %9.3f", num, int(yi), prediction_i, int(yj), prediction_j, dist)
 
-    logger.info("Softmax Classification: %.6f", softmax_correct / (2 * test_data_size))
+    softmax_accuracy = accuracy_score(actuals, predictions)
+
+    logger.info("Softmax Classification: %.6f", softmax_accuracy)
     logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
     logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
     logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
@@ -471,7 +466,7 @@ def main():
 
     with open(txt, mode='a') as t:
 
-        print("Softmax Classification: {}".format(softmax_correct / (2 * test_data_size)), file=t)
+        print("Softmax Classification: {}".format(softmax_accuracy), file=t)
         print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
         print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
 
