@@ -361,7 +361,7 @@ class DDMLNet(nn.Module):
 
 
 def main():
-    test_label = 0
+    test_label = None
 
     train_epoch_number = 100
     train_batch_size = 10
@@ -416,8 +416,8 @@ def main():
     actuals = []
     num = 0
 
-    distance_list = [0 for l in DDMLDataset.labels]
-    pairs_count = [0 for l in DDMLDataset.labels]
+    distance_list = [[0 for l in DDMLDataset.labels] for l in DDMLDataset.labels]
+    pairs_count = [[0 for l in DDMLDataset.labels] for l in DDMLDataset.labels]
 
     for si, sj in test_data_loader:
         xi = Variable(si[0])
@@ -429,8 +429,8 @@ def main():
         dist = net.compute_distance(xi, xj)
         result = (dist <= net.tao)
 
-        distance_list[yj] += dist
-        pairs_count[yj] += 1
+        distance_list[min(yi, yj)][max(yi, yj)] += dist
+        pairs_count[min(yi, yj)][max(yi, yj)] += 1
 
         if actual:
             similar_dist_sum += dist
@@ -447,16 +447,22 @@ def main():
 
         num += 1
 
-        prediction = int(torch.max(net.softmax_forward(xj).data, 1)[1])
+        prediction_i = int(torch.max(net.softmax_forward(xi).data, 1)[1])
+        prediction_j = int(torch.max(net.softmax_forward(xj).data, 1)[1])
+        actuals.append(yi)
         actuals.append(yj)
-        predictions.append(prediction)
+        predictions.append(prediction_i)
+        predictions.append(prediction_j)
 
-        if prediction == yj:
+        if prediction_i == yj:
             softmax_correct += 1
 
-        logger.info("%6d, %2d, %2d, %2d, %9.3f", num, int(yi), int(yj), prediction, dist)
+        if prediction_j == yj:
+            softmax_correct += 1
 
-    logger.info("Softmax Classification: %.6f", softmax_correct / test_data_size)
+        logger.info("%6d, %2d(%2d), %2d(%2d), %9.3f", num, int(yi), prediction_i, int(yj), prediction_j, dist)
+
+    logger.info("Softmax Classification: %.6f", softmax_correct / (2 * test_data_size))
     logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
     logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
     logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
@@ -465,22 +471,24 @@ def main():
 
     with open(txt, mode='a') as t:
 
-        print("Softmax Classification: {}".format(softmax_correct / test_data_size), file=t)
+        print("Softmax Classification: {}".format(softmax_correct / (2 * test_data_size)), file=t)
         print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
         print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
 
         print('   ', end='', file=t)
         for label in DDMLDataset.labels:
             print('{:^7}'.format(label), end='\t', file=t)
-        print('\n{}: '.format(test_label), end='', file=t)
 
-        for l in DDMLDataset.labels:
-            try:
-                v = '{:.3f}'.format(distance_list[l] / pairs_count[l])
-            except ZeroDivisionError:
-                v = ' None '
+        for label1 in sorted(DDMLDataset.labels):
+            print('\n{}: '.format(label1), end='', file=t)
 
-            print(v, end='\t', file=t)
+            for label2 in sorted(DDMLDataset.labels):
+                try:
+                    v = '{:.3f}'.format(distance_list[label1][label2] / pairs_count[label1][label2])
+                except ZeroDivisionError:
+                    v = '{:.3f}'.format(distance_list[label2][label1] / pairs_count[label2][label1])
+
+                print(v, end='\t', file=t)
 
         print('\n', file=t)
         print(cm, file=t)
@@ -490,20 +498,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # test_label = 0
-    #
-    # train_epoch_number = 1000
-    # train_batch_size = 10
-    # test_data_size = 1
-    #
-    # layer_shape = (784, 1568, 196)
-    #
-    # net = DDMLNet(layer_shape, beta=2.5, tao=20.0, b=5.0, learning_rate=0.001)
-    #
-    # test_data = DDMLDataset(label=test_label, size=test_data_size)
-    # test_data_loader = DataLoader(dataset=test_data)
-    #
-    # for epoch in range(train_epoch_number):
-    #     train_data = DDMLDataset(label=test_label, size=train_batch_size)
-    #     train_data_loader = DataLoader(dataset=train_data)
-    #     net._softmax_backward(train_data_loader)
