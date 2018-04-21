@@ -69,6 +69,12 @@ class DDMLDataset(Dataset):
                 if int(s2[1][0]) not in self.labels:
                     continue
 
+                #
+                if int(s1[1][0]) == 4:
+                    s1[1][0] = 2
+                if int(s2[1][0]) == 4:
+                    s2[1][0] = 2
+
                 self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
         else:
             while len(self.data) < size:
@@ -413,7 +419,7 @@ def test(ddml_network, labels, size=10000):
 
         actual = (yi == yj)
         dist = ddml_network.compute_distance(xi, xj)
-        result = (dist <= ddml_network.tao)
+        result = (dist <= ddml_network.tao - ddml_network.b)
 
         distance_list[min(yi, yj)][max(yi, yj)] += dist
         pairs_count[min(yi, yj)][max(yi, yj)] += 1
@@ -464,7 +470,7 @@ def main():
 
     logger = setup_logger(level=logging.INFO)
 
-    net = DDMLNet(layer_shape, beta=1.0, tao=20.0, b=2.0, learning_rate=0.001)
+    net = DDMLNet(layer_shape, beta=1.0, tao=20.0, b=2.0, learning_rate=0.0001)
 
     pkl_path = "pkl/ddml({}: {}-{}-{}).pkl".format(labels, layer_shape, net.beta, net.tao)
     txt = "pkl/ddml({}: {}-{}-{}).txt".format(labels, layer_shape, net.beta, net.tao)
@@ -479,7 +485,7 @@ def main():
     with open(txt, mode='a') as t:
 
         print("Softmax Classification: {}".format(softmax_accuracy), file=t)
-        print('Average Loss: {:6.3f}'.format(loss_sum / train_epoch_number), file=t)
+        print('Average Loss: {:9.6f}'.format(loss_sum / train_epoch_number), file=t)
         print("Confusion Matrix:\n\t{:6d}\t{:6d}\n\t{:6d}\t{:6d}".format(similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct), file=t)
 
         print('   ', end='', file=t)
@@ -507,4 +513,4 @@ def main():
 
 
 if __name__ == '__main__':
-        main()
+    main()
