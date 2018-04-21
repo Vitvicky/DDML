@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 from sklearn.metrics import confusion_matrix, accuracy_score
-import time
 
 
 def setup_logger(level=logging.DEBUG):
@@ -46,11 +45,10 @@ class DDMLDataset(Dataset):
 
     def __init__(self, size=10, labels=None):
         """
-        :param labels: the label must in the pairs.
+        :param labels: array-like, the labels must in the pairs.
         :param size: size of the dataloader.
         """
         self.data = []
-        self.labels = []
 
         if cuda.is_available():
             tensor = cuda.FloatTensor
@@ -58,22 +56,20 @@ class DDMLDataset(Dataset):
             tensor = FloatTensor
 
         if labels is not None:
-            for label in labels:
-                if label in DDMLDataset.labels:
 
-                    self.labels.append(label)
+            assert (isinstance(labels, list))
+            self.labels = labels
 
-                    while len(self.data) < size:
-                        while True:
-                            s1 = random.choice(DDMLDataset.dataset)
-                            s2 = random.choice(DDMLDataset.dataset)
-                            if int(s1[1][0]) == label:
-                                break
+            while len(self.data) < size:
+                s1 = random.choice(DDMLDataset.dataset)
+                s2 = random.choice(DDMLDataset.dataset)
 
-                        self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
-                else:
-                    raise ValueError("Label not in the dataset.")
+                if int(s1[1][0]) not in self.labels:
+                    continue
+                if int(s2[1][0]) not in self.labels:
+                    continue
 
+                self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
         else:
             while len(self.data) < size:
                 s1 = random.choice(DDMLDataset.dataset)
@@ -364,7 +360,7 @@ class DDMLNet(nn.Module):
 
 
 def train(ddml_network, labels, epoch_number, batch_size, pkl_path):
-    logger = setup_logger(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
     if cuda.is_available():
         ddml_network.cuda()
@@ -375,7 +371,7 @@ def train(ddml_network, labels, epoch_number, batch_size, pkl_path):
         ddml_network.load_state_dict(state_dict)
         logger.info("Load state from file.")
 
-        loss_sum = 0.0
+    loss_sum = 0.0
 
     for epoch in range(epoch_number):
         train_data = DDMLDataset(labels=labels, size=batch_size)
@@ -387,9 +383,11 @@ def train(ddml_network, labels, epoch_number, batch_size, pkl_path):
 
     torch.save(ddml_network.state_dict(), pkl_path)
 
+    return loss_sum
+
 
 def test(ddml_network, labels, size=10000):
-    logger = setup_logger(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
     test_data = DDMLDataset(labels=labels, size=size)
     test_data_loader = DataLoader(dataset=test_data)
@@ -444,12 +442,10 @@ def test(ddml_network, labels, size=10000):
 
         logger.info("%6d, %2d(%2d), %2d(%2d), %9.3f", num, int(yi), prediction_i, int(yj), prediction_j, dist)
 
-    softmax_accuracy = accuracy_score(actuals, predictions)
-
-    logger.info("Softmax Classification: %.6f", softmax_accuracy)
     logger.info("Similar: Average Distance: %.6f", similar_dist_sum / (similar_correct + similar_incorrect))
     logger.info("Dissimilar: Average Distance: %.6f", dissimilar_dist_sum / (dissimilar_correct + dissimilar_incorrect))
-    logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
+
+    softmax_accuracy = accuracy_score(actuals, predictions)
 
     cm = confusion_matrix(actuals, predictions, labels=sorted(DDMLDataset.labels))
 
@@ -457,7 +453,8 @@ def test(ddml_network, labels, size=10000):
 
 
 def main():
-    labels = [0, 1, 2, 3, 4, 7, 8, 9]
+    labels = [0, 1, 2, 3, 4, 5, 7, 8, 9]
+    # labels = None
 
     train_epoch_number = 100
     train_batch_size = 10
@@ -465,14 +462,19 @@ def main():
 
     layer_shape = (784, 1568, 1568, 784, 100)
 
+    logger = setup_logger(level=logging.INFO)
+
     net = DDMLNet(layer_shape, beta=1.0, tao=20.0, b=2.0, learning_rate=0.001)
 
     pkl_path = "pkl/ddml({}: {}-{}-{}).pkl".format(labels, layer_shape, net.beta, net.tao)
     txt = "pkl/ddml({}: {}-{}-{}).txt".format(labels, layer_shape, net.beta, net.tao)
 
-    train(net, labels, train_epoch_number, train_batch_size, pkl_path)
+    loss_sum = train(net, labels, train_epoch_number, train_batch_size, pkl_path)
     test_result = test(net, labels, test_data_size)
     softmax_accuracy, similar_correct, similar_incorrect, dissimilar_correct, dissimilar_incorrect, distance_list, pairs_count, cm = test_result
+
+    logger.info("Softmax Classification: %.6f", softmax_accuracy)
+    logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
 
     with open(txt, mode='a') as t:
 
@@ -489,10 +491,10 @@ def main():
 
             for label2 in sorted(DDMLDataset.labels):
                 try:
-                    v = '{:.3f}'.format(distance_list[label1][label2] / pairs_count[label1][label2])
+                    v = '{:6.3f}'.format(distance_list[label1][label2] / pairs_count[label1][label2])
                 except ZeroDivisionError:
                     try:
-                        v = '{:.3f}'.format(distance_list[label2][label1] / pairs_count[label2][label1])
+                        v = '{:6.3f}'.format(distance_list[label2][label1] / pairs_count[label2][label1])
                     except ZeroDivisionError:
                         v = '{:^7}'.format('NaN')
 
@@ -505,4 +507,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+        main()
