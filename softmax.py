@@ -44,33 +44,35 @@ class DDMLDataset(Dataset):
             dataset.append((row[:-1], row[-1:]))
             labels.add(int(row[-1]))
 
-    def __init__(self, size=10, label=None):
+    def __init__(self, size=10, labels=None):
         """
-        :param label: the label must in the pairs.
+        :param labels: the label must in the pairs.
         :param size: size of the dataloader.
         """
         self.data = []
+        self.labels = []
 
         if cuda.is_available():
             tensor = cuda.FloatTensor
         else:
             tensor = FloatTensor
 
-        if label is not None:
-            if label in DDMLDataset.labels:
+        if labels is not None:
+            for label in labels:
+                if label in DDMLDataset.labels:
 
-                self.label = label
+                    self.labels.append(label)
 
-                while len(self.data) < size:
-                    while True:
-                        s1 = random.choice(DDMLDataset.dataset)
-                        s2 = random.choice(DDMLDataset.dataset)
-                        if int(s1[1][0]) == self.label:
-                            break
+                    while len(self.data) < size:
+                        while True:
+                            s1 = random.choice(DDMLDataset.dataset)
+                            s2 = random.choice(DDMLDataset.dataset)
+                            if int(s1[1][0]) == label:
+                                break
 
-                    self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
-            else:
-                raise ValueError("Label not in the dataset.")
+                        self.data.append(((tensor(s1[0]) / 255, tensor(s1[1])), (tensor(s2[0]) / 255, tensor(s2[1]))))
+                else:
+                    raise ValueError("Label not in the dataset.")
 
         else:
             while len(self.data) < size:
@@ -361,50 +363,36 @@ class DDMLNet(nn.Module):
         return (self(input1) - self(input2)).data.norm() ** 2
 
 
-def main():
-    test_label = None
-
-    train_epoch_number = 100
-    train_batch_size = 10
-    test_data_size = 10000
-
-    layer_shape = (784, 1568, 1568, 784, 100)
-
-    # logger = setup_logger()
+def train(ddml_network, labels, epoch_number, batch_size, pkl_path):
     logger = setup_logger(level=logging.INFO)
 
-    test_data = DDMLDataset(label=test_label, size=test_data_size)
-    test_data_loader = DataLoader(dataset=test_data)
-
-    net = DDMLNet(layer_shape, beta=1.0, tao=10.0, b=1.0, learning_rate=0.001)
-
-    pkl = "pkl/ddml({}: {}-{}-{}).pkl".format(test_label, layer_shape, net.beta, net.tao)
-    txt = "pkl/ddml({}: {}-{}-{}).txt".format(test_label, layer_shape, net.beta, net.tao)
-
     if cuda.is_available():
-        net.cuda()
+        ddml_network.cuda()
         logger.info("Using cuda!")
 
-    if os.path.exists(pkl):
-        state_dict = torch.load(pkl)
-        net.load_state_dict(state_dict)
+    if os.path.exists(pkl_path):
+        state_dict = torch.load(pkl_path)
+        ddml_network.load_state_dict(state_dict)
         logger.info("Load state from file.")
 
-    loss_sum = 0.0
+        loss_sum = 0.0
 
-    for epoch in range(train_epoch_number):
-        train_data = DDMLDataset(label=test_label, size=train_batch_size)
+    for epoch in range(epoch_number):
+        train_data = DDMLDataset(labels=labels, size=batch_size)
         train_data_loader = DataLoader(dataset=train_data)
-        net.backward(train_data_loader)
-        loss = net.loss(train_data_loader)
+        ddml_network.backward(train_data_loader)
+        loss = ddml_network.loss(train_data_loader)
         loss_sum += loss
         logger.info("Iteration: %6d, Loss: %6.3f, Average Loss: %9.6f", epoch + 1, loss, loss_sum / (epoch + 1))
 
-    torch.save(net.state_dict(), pkl)
+    torch.save(ddml_network.state_dict(), pkl_path)
 
-    #
-    # test (with test label)
-    #
+
+def test(ddml_network, labels, size=10000):
+    logger = setup_logger(level=logging.INFO)
+
+    test_data = DDMLDataset(labels=labels, size=size)
+    test_data_loader = DataLoader(dataset=test_data)
 
     similar_dist_sum = 0.0
     dissimilar_dist_sum = 0.0
@@ -426,8 +414,8 @@ def main():
         yj = int(sj[1])
 
         actual = (yi == yj)
-        dist = net.compute_distance(xi, xj)
-        result = (dist <= net.tao)
+        dist = ddml_network.compute_distance(xi, xj)
+        result = (dist <= ddml_network.tao)
 
         distance_list[min(yi, yj)][max(yi, yj)] += dist
         pairs_count[min(yi, yj)][max(yi, yj)] += 1
@@ -447,8 +435,8 @@ def main():
 
         num += 1
 
-        prediction_i = int(torch.max(net.softmax_forward(xi).data, 1)[1])
-        prediction_j = int(torch.max(net.softmax_forward(xj).data, 1)[1])
+        prediction_i = int(torch.max(ddml_network.softmax_forward(xi).data, 1)[1])
+        prediction_j = int(torch.max(ddml_network.softmax_forward(xj).data, 1)[1])
         actuals.append(yi)
         actuals.append(yj)
         predictions.append(prediction_i)
@@ -464,6 +452,27 @@ def main():
     logger.info("\nConfusion Matrix:\n\t%6d\t%6d\n\t%6d\t%6d", similar_correct, similar_incorrect, dissimilar_incorrect, dissimilar_correct)
 
     cm = confusion_matrix(actuals, predictions, labels=sorted(DDMLDataset.labels))
+
+    return softmax_accuracy, similar_correct, similar_incorrect, dissimilar_correct, dissimilar_incorrect, distance_list, pairs_count, cm
+
+
+def main():
+    labels = [0, 1, 2, 3, 4, 7, 8, 9]
+
+    train_epoch_number = 100
+    train_batch_size = 10
+    test_data_size = 10000
+
+    layer_shape = (784, 1568, 1568, 784, 100)
+
+    net = DDMLNet(layer_shape, beta=1.0, tao=20.0, b=2.0, learning_rate=0.001)
+
+    pkl_path = "pkl/ddml({}: {}-{}-{}).pkl".format(labels, layer_shape, net.beta, net.tao)
+    txt = "pkl/ddml({}: {}-{}-{}).txt".format(labels, layer_shape, net.beta, net.tao)
+
+    train(net, labels, train_epoch_number, train_batch_size, pkl_path)
+    test_result = test(net, labels, test_data_size)
+    softmax_accuracy, similar_correct, similar_incorrect, dissimilar_correct, dissimilar_incorrect, distance_list, pairs_count, cm = test_result
 
     with open(txt, mode='a') as t:
 
@@ -482,7 +491,10 @@ def main():
                 try:
                     v = '{:.3f}'.format(distance_list[label1][label2] / pairs_count[label1][label2])
                 except ZeroDivisionError:
-                    v = '{:.3f}'.format(distance_list[label2][label1] / pairs_count[label2][label1])
+                    try:
+                        v = '{:.3f}'.format(distance_list[label2][label1] / pairs_count[label2][label1])
+                    except ZeroDivisionError:
+                        v = '{:^7}'.format('NaN')
 
                 print(v, end='\t', file=t)
 
@@ -493,6 +505,4 @@ def main():
 
 
 if __name__ == '__main__':
-    for _ in range(20):
-        main()
-        time.sleep(120)
+    main()
