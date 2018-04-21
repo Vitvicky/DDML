@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 from sklearn.metrics import confusion_matrix, accuracy_score
+import time
 
 
 def setup_logger(level=logging.DEBUG):
@@ -492,4 +493,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    for _ in range(20):
+        main()
+        time.sleep(120)
